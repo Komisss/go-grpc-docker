@@ -10,6 +10,7 @@ service HelloService {
 
 message HelloRequest {
   string name = 1;
+  string language = 2; // Новое поле для языка
 }
 
 message HelloResponse {

@@ -36,7 +36,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	res, err := client.SayHello(ctx, &pb.HelloRequest{Name: "Andrey"})
+	// Пример отправки имени и языка
+	name := "Andrey"
+	language := "Spanish" // Задайте желаемый язык
+
+	res, err := client.SayHello(ctx, &pb.HelloRequest{Name: name, Language: language})
 	if err != nil {
 		log.Fatalf("Failed to greet: %v", err)
 	}

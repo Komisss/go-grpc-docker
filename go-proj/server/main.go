@@ -19,35 +19,22 @@ type server struct {
 	db *sql.DB
 }
 
-// Метод SayHello, который добавляет имя в базу и возвращает список приветствий
+// Метод SayHello, который возвращает приветствие на выбранном языке
 func (s *server) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	log.Printf("Received: %s", req.Name)
+	log.Printf("Received: Name=%s, Language=%s", req.Name, req.Language)
 
-	// Записываем имя в базу данных
-	_, err := s.db.Exec("INSERT INTO greetings (language, greeting) VALUES ($1, $2)", "Custom", req.Name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to insert into database: %v", err)
+	// Получаем приветствие из базы данных
+	var greeting string
+	err := s.db.QueryRow("SELECT greeting FROM greetings WHERE language = $1", req.Language).Scan(&greeting)
+	if err == sql.ErrNoRows {
+		// Если язык не найден, возвращаем приветствие на русском
+		greeting = "Привет"
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to query database: %v", err)
 	}
 
-	// Достаем список приветствий
-	rows, err := s.db.Query("SELECT greeting FROM greetings")
-	if err != nil {
-		return nil, fmt.Errorf("failed to query greetings: %v", err)
-	}
-	defer rows.Close()
-
-	// Собираем список приветствий
-	var greetings []string
-	for rows.Next() {
-		var greeting string
-		if err := rows.Scan(&greeting); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %v", err)
-		}
-		greetings = append(greetings, greeting)
-	}
-
-	// Формируем сообщение
-	message := fmt.Sprintf("Hello, %s! Available greetings: %v", req.Name, greetings)
+	// Формируем ответ
+	message := fmt.Sprintf("%s, %s!", greeting, req.Name)
 	return &pb.HelloResponse{Message: message}, nil
 }
 
