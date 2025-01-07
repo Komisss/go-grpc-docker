@@ -17,4 +17,4 @@ COPY . .
 RUN go build -o server_app server/main.go
 
 # Запускаем сервер
-CMD ["/app/server"]
+CMD ["/app/server_app"]
