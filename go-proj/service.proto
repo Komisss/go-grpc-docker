@@ -4,15 +4,37 @@ package example;
 
 option go_package = "example/servicepb";
 
-service HelloService {
-  rpc SayHello (HelloRequest) returns (HelloResponse);
+// Сервис для работы с фильмами
+service MovieService {
+  rpc CreateMovie (CreateMovieRequest) returns (MovieResponse);
+  rpc GetMovie (GetMovieRequest) returns (MovieResponse);
+  rpc ListMovies (Empty) returns (MovieListResponse);
 }
 
-message HelloRequest {
-  string name = 1;
-  string language = 2; // Новое поле для языка
+// Пустое сообщение
+message Empty {}
+
+// Запрос для создания фильма
+message CreateMovieRequest {
+  string title = 1;
+  string description = 2;
+  int32 year = 3;
 }
 
-message HelloResponse {
-  string message = 1;
+// Запрос для получения фильма по ID
+message GetMovieRequest {
+  int32 id = 1;
+}
+
+// Ответ с информацией о фильме
+message MovieResponse {
+  int32 id = 1;
+  string title = 2;
+  string description = 3;
+  int32 year = 4;
+}
+
+// Ответ с информацией о списке фильмов
+message MovieListResponse {
+  repeated MovieResponse movies = 1;
 }

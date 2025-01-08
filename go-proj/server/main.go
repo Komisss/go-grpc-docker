@@ -15,27 +15,88 @@ import (
 )
 
 type server struct {
-	pb.UnimplementedHelloServiceServer
+	pb.UnimplementedMovieServiceServer
 	db *sql.DB
 }
 
-// Метод SayHello, который возвращает приветствие на выбранном языке
-func (s *server) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	log.Printf("Received: Name=%s, Language=%s", req.Name, req.Language)
+// Метод CreateMovie: создание фильма
+func (s *server) CreateMovie(ctx context.Context, req *pb.CreateMovieRequest) (*pb.MovieResponse, error) {
+	log.Printf("Creating movie: %s (%d)", req.Title, req.Year)
 
-	// Получаем приветствие из базы данных
-	var greeting string
-	err := s.db.QueryRow("SELECT greeting FROM greetings WHERE language = $1", req.Language).Scan(&greeting)
-	if err == sql.ErrNoRows {
-		// Если язык не найден, возвращаем приветствие на русском
-		greeting = "Привет"
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to query database: %v", err)
+	// Сохраняем фильм в базе данных
+	var id int
+	err := s.db.QueryRow(
+		"INSERT INTO movies (title, description, year) VALUES ($1, $2, $3) RETURNING id",
+		req.Title, req.Description, req.Year,
+	).Scan(&id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert movie: %v", err)
 	}
 
-	// Формируем ответ
-	message := fmt.Sprintf("%s, %s!", greeting, req.Name)
-	return &pb.HelloResponse{Message: message}, nil
+	// Возвращаем информацию о созданном фильме
+	return &pb.MovieResponse{
+		Id:          int32(id),
+		Title:       req.Title,
+		Description: req.Description,
+		Year:        req.Year,
+	}, nil
+}
+
+// Метод GetMovie: получение фильма по ID
+func (s *server) GetMovie(ctx context.Context, req *pb.GetMovieRequest) (*pb.MovieResponse, error) {
+	log.Printf("Fetching movie with ID: %d", req.Id)
+
+	// Достаем фильм из базы данных
+	var title, description string
+	var year int
+	err := s.db.QueryRow(
+		"SELECT title, description, year FROM movies WHERE id = $1", req.Id,
+	).Scan(&title, &description, &year)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("movie with ID %d not found", req.Id)
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to fetch movie: %v", err)
+	}
+
+	// Возвращаем информацию о фильме
+	return &pb.MovieResponse{
+		Id:          req.Id,
+		Title:       title,
+		Description: description,
+		Year:        int32(year),
+	}, nil
+}
+
+// Метод ListMovies: получение списка всех фильмов
+func (s *server) ListMovies(ctx context.Context, req *pb.Empty) (*pb.MovieListResponse, error) {
+	log.Println("Fetching all movies")
+
+	// Достаем список фильмов из базы данных
+	rows, err := s.db.Query("SELECT id, title, description, year FROM movies")
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch movies: %v", err)
+	}
+	defer rows.Close()
+
+	// Формируем список фильмов
+	var movies []*pb.MovieResponse
+	for rows.Next() {
+		var id int
+		var title, description string
+		var year int
+		if err := rows.Scan(&id, &title, &description, &year); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %v", err)
+		}
+		movies = append(movies, &pb.MovieResponse{
+			Id:          int32(id),
+			Title:       title,
+			Description: description,
+			Year:        int32(year),
+		})
+	}
+
+	// Возвращаем список фильмов
+	return &pb.MovieListResponse{Movies: movies}, nil
 }
 
 // Ожидание доступности базы данных
@@ -67,27 +128,15 @@ func main() {
 
 	// Создаём таблицу, если её ещё нет
 	_, err = db.Exec(`
-        CREATE TABLE IF NOT EXISTS greetings (
+        CREATE TABLE IF NOT EXISTS movies (
             id SERIAL PRIMARY KEY,
-            language TEXT NOT NULL,
-            greeting TEXT NOT NULL
+            title TEXT NOT NULL,
+            description TEXT,
+            year INT NOT NULL
         )
     `)
 	if err != nil {
-		log.Fatalf("Failed to create table: %v", err)
-	}
-
-	// Заполняем базу данными, если она пустая
-	_, err = db.Exec(`
-        INSERT INTO greetings (language, greeting) VALUES
-        ('English', 'Hello'),
-        ('Russian', 'Привет'),
-        ('Spanish', 'Hola'),
-        ('French', 'Bonjour')
-        ON CONFLICT DO NOTHING
-    `)
-	if err != nil {
-		log.Fatalf("Failed to seed greetings: %v", err)
+		log.Fatalf("Failed to create movies table: %v", err)
 	}
 
 	listener, err := net.Listen("tcp", ":50051")
@@ -96,7 +145,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterHelloServiceServer(grpcServer, &server{db: db})
+	pb.RegisterMovieServiceServer(grpcServer, &server{db: db})
 
 	log.Println("Server is listening on port 50051")
 	if err := grpcServer.Serve(listener); err != nil {

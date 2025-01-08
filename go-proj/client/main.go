@@ -12,37 +12,47 @@ import (
 )
 
 func main() {
-	var conn *grpc.ClientConn
-	var err error
-
-	// Повторные попытки подключения
-	for i := 0; i < 5; i++ {
-		fmt.Println("Начало соединения")
-		conn, err = grpc.Dial("server:50051", grpc.WithInsecure())
-		if err == nil {
-			break
-		}
-		log.Printf("Failed to connect, retrying... (%d/5)", i+1)
-		time.Sleep(2 * time.Second)
-	}
+	conn, err := grpc.Dial("server:50051", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("Failed to connect after retries: %v", err)
+		log.Fatalf("Failed to connect: %v", err)
 	}
 	defer conn.Close()
-	fmt.Println("Соединение успешно")
 
-	client := pb.NewHelloServiceClient(conn)
+	client := pb.NewMovieServiceClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Пример отправки имени и языка
-	name := "Andrey"
-	language := "Spanish" // Задайте желаемый язык
-
-	res, err := client.SayHello(ctx, &pb.HelloRequest{Name: name, Language: language})
-	if err != nil {
-		log.Fatalf("Failed to greet: %v", err)
+	// Создаем фильм
+	createReq := &pb.CreateMovieRequest{
+		Title:       "Унесенные призраками",
+		Description: "Тихиро с мамой и папой переезжает в новый дом. Заблудившись по дороге, они оказываются в странном пустынном городе, где их ждет великолепный пир. Родители с жадностью набрасываются на еду и к ужасу девочки превращаются в свиней, став пленниками злой колдуньи Юбабы. Теперь, оказавшись одна среди волшебных существ и загадочных видений, Тихиро должна придумать, как избавить своих родителей от чар коварной старухи.",
+		Year:        2001,
 	}
-	log.Printf("Response: %s", res.Message)
+	createResp, err := client.CreateMovie(ctx, createReq)
+	if err != nil {
+		log.Fatalf("Failed to create movie: %v", err)
+	}
+	fmt.Printf("Created Movie: ID=%d, Title=%s, Description=%s, Year=%d\n",
+		createResp.Id, createResp.Title, createResp.Description, createResp.Year)
+
+	// Получаем один фильм
+	getReq := &pb.GetMovieRequest{Id: createResp.Id}
+	getResp, err := client.GetMovie(ctx, getReq)
+	if err != nil {
+		log.Fatalf("Failed to get movie: %v", err)
+	}
+	fmt.Printf("Fetched Movie: ID=%d, Title=%s, Description=%s, Year=%d\n",
+		getResp.Id, getResp.Title, getResp.Description, getResp.Year)
+
+	// Получаем список всех фильмов
+	listResp, err := client.ListMovies(ctx, &pb.Empty{})
+	if err != nil {
+		log.Fatalf("Failed to list movies: %v", err)
+	}
+	fmt.Println("All Movies:")
+	for _, movie := range listResp.Movies {
+		fmt.Printf("ID=%d, Title=%s, Description=%s, Year=%d\n",
+			movie.Id, movie.Title, movie.Description, movie.Year)
+	}
 }

@@ -19,101 +19,181 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HelloService_SayHello_FullMethodName = "/example.HelloService/SayHello"
+	MovieService_CreateMovie_FullMethodName = "/example.MovieService/CreateMovie"
+	MovieService_GetMovie_FullMethodName    = "/example.MovieService/GetMovie"
+	MovieService_ListMovies_FullMethodName  = "/example.MovieService/ListMovies"
 )
 
-// HelloServiceClient is the client API for HelloService service.
+// MovieServiceClient is the client API for MovieService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type HelloServiceClient interface {
-	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
+//
+// Сервис для работы с фильмами
+type MovieServiceClient interface {
+	CreateMovie(ctx context.Context, in *CreateMovieRequest, opts ...grpc.CallOption) (*MovieResponse, error)
+	GetMovie(ctx context.Context, in *GetMovieRequest, opts ...grpc.CallOption) (*MovieResponse, error)
+	ListMovies(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MovieListResponse, error)
 }
 
-type helloServiceClient struct {
+type movieServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewHelloServiceClient(cc grpc.ClientConnInterface) HelloServiceClient {
-	return &helloServiceClient{cc}
+func NewMovieServiceClient(cc grpc.ClientConnInterface) MovieServiceClient {
+	return &movieServiceClient{cc}
 }
 
-func (c *helloServiceClient) SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error) {
+func (c *movieServiceClient) CreateMovie(ctx context.Context, in *CreateMovieRequest, opts ...grpc.CallOption) (*MovieResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HelloResponse)
-	err := c.cc.Invoke(ctx, HelloService_SayHello_FullMethodName, in, out, cOpts...)
+	out := new(MovieResponse)
+	err := c.cc.Invoke(ctx, MovieService_CreateMovie_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// HelloServiceServer is the server API for HelloService service.
-// All implementations must embed UnimplementedHelloServiceServer
-// for forward compatibility.
-type HelloServiceServer interface {
-	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
-	mustEmbedUnimplementedHelloServiceServer()
+func (c *movieServiceClient) GetMovie(ctx context.Context, in *GetMovieRequest, opts ...grpc.CallOption) (*MovieResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MovieResponse)
+	err := c.cc.Invoke(ctx, MovieService_GetMovie_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
-// UnimplementedHelloServiceServer must be embedded to have
+func (c *movieServiceClient) ListMovies(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*MovieListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MovieListResponse)
+	err := c.cc.Invoke(ctx, MovieService_ListMovies_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MovieServiceServer is the server API for MovieService service.
+// All implementations must embed UnimplementedMovieServiceServer
+// for forward compatibility.
+//
+// Сервис для работы с фильмами
+type MovieServiceServer interface {
+	CreateMovie(context.Context, *CreateMovieRequest) (*MovieResponse, error)
+	GetMovie(context.Context, *GetMovieRequest) (*MovieResponse, error)
+	ListMovies(context.Context, *Empty) (*MovieListResponse, error)
+	mustEmbedUnimplementedMovieServiceServer()
+}
+
+// UnimplementedMovieServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedHelloServiceServer struct{}
+type UnimplementedMovieServiceServer struct{}
 
-func (UnimplementedHelloServiceServer) SayHello(context.Context, *HelloRequest) (*HelloResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+func (UnimplementedMovieServiceServer) CreateMovie(context.Context, *CreateMovieRequest) (*MovieResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateMovie not implemented")
 }
-func (UnimplementedHelloServiceServer) mustEmbedUnimplementedHelloServiceServer() {}
-func (UnimplementedHelloServiceServer) testEmbeddedByValue()                      {}
+func (UnimplementedMovieServiceServer) GetMovie(context.Context, *GetMovieRequest) (*MovieResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMovie not implemented")
+}
+func (UnimplementedMovieServiceServer) ListMovies(context.Context, *Empty) (*MovieListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMovies not implemented")
+}
+func (UnimplementedMovieServiceServer) mustEmbedUnimplementedMovieServiceServer() {}
+func (UnimplementedMovieServiceServer) testEmbeddedByValue()                      {}
 
-// UnsafeHelloServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to HelloServiceServer will
+// UnsafeMovieServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MovieServiceServer will
 // result in compilation errors.
-type UnsafeHelloServiceServer interface {
-	mustEmbedUnimplementedHelloServiceServer()
+type UnsafeMovieServiceServer interface {
+	mustEmbedUnimplementedMovieServiceServer()
 }
 
-func RegisterHelloServiceServer(s grpc.ServiceRegistrar, srv HelloServiceServer) {
-	// If the following call pancis, it indicates UnimplementedHelloServiceServer was
+func RegisterMovieServiceServer(s grpc.ServiceRegistrar, srv MovieServiceServer) {
+	// If the following call pancis, it indicates UnimplementedMovieServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&HelloService_ServiceDesc, srv)
+	s.RegisterService(&MovieService_ServiceDesc, srv)
 }
 
-func _HelloService_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloRequest)
+func _MovieService_CreateMovie_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateMovieRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HelloServiceServer).SayHello(ctx, in)
+		return srv.(MovieServiceServer).CreateMovie(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HelloService_SayHello_FullMethodName,
+		FullMethod: MovieService_CreateMovie_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HelloServiceServer).SayHello(ctx, req.(*HelloRequest))
+		return srv.(MovieServiceServer).CreateMovie(ctx, req.(*CreateMovieRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// HelloService_ServiceDesc is the grpc.ServiceDesc for HelloService service.
+func _MovieService_GetMovie_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMovieRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MovieServiceServer).GetMovie(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MovieService_GetMovie_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MovieServiceServer).GetMovie(ctx, req.(*GetMovieRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MovieService_ListMovies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MovieServiceServer).ListMovies(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MovieService_ListMovies_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MovieServiceServer).ListMovies(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// MovieService_ServiceDesc is the grpc.ServiceDesc for MovieService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var HelloService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "example.HelloService",
-	HandlerType: (*HelloServiceServer)(nil),
+var MovieService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "example.MovieService",
+	HandlerType: (*MovieServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SayHello",
-			Handler:    _HelloService_SayHello_Handler,
+			MethodName: "CreateMovie",
+			Handler:    _MovieService_CreateMovie_Handler,
+		},
+		{
+			MethodName: "GetMovie",
+			Handler:    _MovieService_GetMovie_Handler,
+		},
+		{
+			MethodName: "ListMovies",
+			Handler:    _MovieService_ListMovies_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
